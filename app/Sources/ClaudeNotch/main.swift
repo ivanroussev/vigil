@@ -129,7 +129,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: Menu bar
 
-    /// "● ▰▰▰▱▱▱▱▱ 3/8" while working, amber when it needs you, green when done.
+    /// "◔ 3/8 ~6m" while working, yellow "!" when it needs you, teal "✓" when done.
     func updateStatusBar(_ s: SessionStatus?) {
         guard let button = statusItem?.button else { return }
         todayItem.title = "Today: \(Fmt.duration(store.todaySeconds)) across \(store.todayTasks) task\(store.todayTasks == 1 ? "" : "s")"
@@ -142,30 +142,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         button.image = nil
         let state = s.displayState(now: store.now)
-        let color: NSColor = state == "needs_you" ? .systemOrange : state == "done" ? .systemGreen
-            : state == "stuck" ? .systemPurple : NSColor(red: 0.85, green: 0.47, blue: 0.34, alpha: 1)
+        // No green / orange dots: those look like the macOS camera and mic indicators.
+        let color: NSColor = state == "needs_you" ? .systemYellow : state == "done" ? .systemTeal
+            : state == "stuck" ? .systemPurple : .labelColor
         let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
         let text = NSMutableAttributedString()
         func add(_ str: String, _ c: NSColor) {
             text.append(NSAttributedString(string: str, attributes: [.foregroundColor: c, .font: font]))
         }
         switch state {
-        case "needs_you": add("✋ needs you", color)
+        case "needs_you": add("! needs you", color)
         case "done": add("✓ done", color)
         case "stuck": add("? stuck", color)
         default:
-            add("● ", color)
             if let t = s.total, t > 0 {
-                let slots = 10
-                let filled = Int((s.progress * Double(slots)).rounded())
-                add(String(repeating: "▰", count: filled), color)
-                add(String(repeating: "▱", count: slots - filled), .tertiaryLabelColor)
-                add(" \(s.done ?? 0)/\(t)", .labelColor)
+                // Ring glyph fills in quarters: ○ ◔ ◑ ◕
+                let rings = ["○", "◔", "◑", "◕"]
+                add(rings[min(3, Int(s.progress * 4))] + " ", color)
+                add("\(s.done ?? 0)/\(t)", .labelColor)
                 if let eta = s.eta(now: store.now, historyPerStep: store.perStep) {
                     add(" ~\(Fmt.duration(eta))", .secondaryLabelColor)
                 }
             } else if let started = s.started {
-                add("working \(Fmt.duration(store.now - started))", .labelColor)
+                add("◌ working \(Fmt.duration(store.now - started))", .labelColor)
             } else {
                 add("working", .labelColor)
             }

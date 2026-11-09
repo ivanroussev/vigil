@@ -4,12 +4,14 @@ A pill around the MacBook notch, plus a menu bar progress bar, showing what Clau
 
 | Pill | Meaning |
 |---|---|
-| Coral, pulsing | Working. Grows as plan steps complete; shows `3/8` or elapsed time |
-| Amber ✋ | Needs your approval or input |
-| Lavender ? | Looks stuck: no activity for 10 min (30 min inside a long command), or the same step failed / repeated 3× |
-| Green ✓ | Finished (fades after 30 min) |
+| White ring, spinning | Working. The ring and pill fill as plan steps complete; shows `3/8` or elapsed time |
+| Yellow `!`, ring blinking | Needs your approval or input |
+| Lavender `?` | Looks stuck: no activity for 10 min (30 min inside a long command), or the same step failed / repeated 3× |
+| Teal `✓` | Finished (fades after 30 min) |
 
-Small dots next to the pill are your other running sessions.
+No green or orange dots on purpose: those look like the macOS camera and microphone indicators.
+
+Small dashes next to the pill are your other running sessions.
 
 **Hover** the pill for the card: task, current action, heartbeat, step list, elapsed, ETA,
 context window use, finish summary (files, +/− lines, tool calls), other sessions, and today's total.

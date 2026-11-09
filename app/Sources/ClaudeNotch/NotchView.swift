@@ -1,10 +1,11 @@
 import SwiftUI
 
 enum Palette {
-    static let working = Color(red: 0.85, green: 0.47, blue: 0.34)   // Claude coral
-    static let needsYou = Color(red: 1.0, green: 0.76, blue: 0.20)   // amber
-    static let done = Color(red: 0.30, green: 0.87, blue: 0.50)      // green
-    static let stuck = Color(red: 0.62, green: 0.58, blue: 0.95)     // lavender
+    // No green or orange dots: those read as the macOS camera / mic indicators.
+    static let working = Color.white
+    static let needsYou = Color(red: 1.0, green: 0.86, blue: 0.36)   // soft yellow
+    static let done = Color(red: 0.36, green: 0.80, blue: 0.86)      // teal
+    static let stuck = Color(red: 0.66, green: 0.62, blue: 0.98)     // lavender
     static let dim = Color.white.opacity(0.55)
 
     static func color(for state: String) -> Color {
@@ -48,27 +49,47 @@ struct NotchShape: Shape {
     }
 }
 
-struct PulsingDot: View {
+/// Outline ring that fills clockwise with progress and slowly spins while working.
+/// With no plan yet it shows a short spinning arc instead.
+struct ProgressRing: View {
+    var progress: Double
     var color: Color
-    var pulsing: Bool
-    var size: CGFloat = 8
-    @State private var on = false
+    var spinning: Bool
+    var hasPlan: Bool
+    var size: CGFloat = 12
 
     var body: some View {
-        Circle()
-            .fill(color)
+        TimelineView(.animation(paused: !spinning)) { ctx in
+            let angle = spinning ? ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 6) / 6 * 360 : 0
+            ZStack {
+                Circle().stroke(color.opacity(0.22), lineWidth: 2)
+                Circle()
+                    .trim(from: 0, to: hasPlan ? max(0.06, progress) : 0.28)
+                    .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                    .rotationEffect(.degrees(-90 + (hasPlan ? angle * 0.25 : angle * 2)))
+                    .animation(.easeInOut(duration: 0.5), value: progress)
+            }
             .frame(width: size, height: size)
-            .shadow(color: color.opacity(0.9), radius: on ? 5 : 1)
-            .scaleEffect(pulsing && on ? 1.25 : 1)
-            .opacity(pulsing && on ? 0.55 : 1)
-            .onAppear { restart() }
-            .onChange(of: pulsing) { _, _ in restart() }
+        }
     }
+}
 
-    private func restart() {
-        on = false
-        guard pulsing else { return }
-        withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { on = true }
+/// Gentle blink to draw the eye when Claude is waiting on you.
+struct Blink: ViewModifier {
+    var on: Bool
+    func body(content: Content) -> some View {
+        TimelineView(.animation(paused: !on)) { ctx in
+            let t = ctx.date.timeIntervalSinceReferenceDate
+            content.opacity(on ? 0.45 + 0.55 * (0.5 + 0.5 * cos(t * .pi)) : 1)   // 2s cycle
+        }
+    }
+}
+
+/// Small dash marking another session (dots would look like a camera / mic light).
+struct SessionDash: View {
+    var color: Color
+    var body: some View {
+        RoundedRectangle(cornerRadius: 1.5).fill(color).frame(width: 8, height: 3)
     }
 }
 
@@ -93,9 +114,11 @@ struct NotchView: View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 HStack(spacing: 5) {
-                    PulsingDot(color: color, pulsing: state == "working")
+                    ProgressRing(progress: s?.progress ?? 0, color: color,
+                                 spinning: state == "working", hasPlan: (s?.total ?? 0) > 0 || state == "done")
+                        .modifier(Blink(on: state == "needs_you"))
                     ForEach(store.others.prefix(4)) { o in
-                        Circle().fill(Palette.color(for: o.displayState(now: store.now))).frame(width: 5, height: 5)
+                        SessionDash(color: Palette.color(for: o.displayState(now: store.now)))
                     }
                 }
                 .frame(width: side)
@@ -136,7 +159,7 @@ struct NotchView: View {
         let font = Font.system(size: 12, weight: .semibold, design: .rounded).monospacedDigit()
         switch state {
         case "needs_you":
-            Image(systemName: "hand.raised.fill").font(font).foregroundStyle(color)
+            Image(systemName: "exclamationmark").font(font.weight(.heavy)).foregroundStyle(color)
         case "done":
             Image(systemName: "checkmark").font(font.weight(.bold)).foregroundStyle(color)
         case "stuck":
@@ -194,7 +217,8 @@ struct NotchCard: View {
 
             // What it's doing now + heartbeat.
             HStack(spacing: 6) {
-                Circle().fill(color).frame(width: 6, height: 6)
+                ProgressRing(progress: s.progress, color: color, spinning: state == "working",
+                             hasPlan: (s.total ?? 0) > 0 || s.state == "done", size: 10)
                 Text(statusLine).font(body12).foregroundStyle(.white.opacity(0.9)).lineLimit(1)
                 Spacer(minLength: 4)
                 Text(Fmt.duration(store.now - (s.updated ?? store.now)) + " ago").font(small).foregroundStyle(Palette.dim)
@@ -302,7 +326,7 @@ struct NotchCard: View {
             ForEach(store.others.prefix(5)) { o in
                 Button { onJump(o) } label: {
                     HStack(spacing: 7) {
-                        Circle().fill(Palette.color(for: o.displayState(now: store.now))).frame(width: 6, height: 6)
+                        SessionDash(color: Palette.color(for: o.displayState(now: store.now)))
                         Text(o.project ?? "Claude").font(small.weight(.bold)).foregroundStyle(.white)
                         Text(o.state == "done" ? "Finished" : (o.action ?? "")).font(small)
                             .foregroundStyle(Palette.dim).lineLimit(1)
@@ -319,7 +343,7 @@ struct NotchCard: View {
     private func approval(_ req: ApprovalRequest) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Image(systemName: "hand.raised.fill").foregroundStyle(Palette.needsYou)
+                Image(systemName: "exclamationmark").font(body12.weight(.heavy)).foregroundStyle(Palette.needsYou)
                 Text("Allow \(req.tool ?? "tool")?").font(body12.weight(.bold)).foregroundStyle(.white)
                 if let p = req.project { Text(p).font(small).foregroundStyle(Palette.dim) }
                 Spacer()
