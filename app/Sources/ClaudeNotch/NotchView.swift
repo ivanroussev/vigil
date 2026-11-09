@@ -122,10 +122,7 @@ struct NotchView: View {
         }
         .frame(width: width)
         .background(NotchShape(radius: expanded ? 20 : 10).fill(Color.black))
-        .background(GeometryReader { g in
-            Color.clear.preference(key: FrameKey.self, value: s == nil ? .zero : g.frame(in: .global))
-        })
-        .onPreferenceChange(FrameKey.self) { ui.hitRect = $0 }
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { ui.hitRect = $0 }
         .shadow(color: state == "working" && !expanded ? color.opacity(0.35) : .black.opacity(expanded ? 0.4 : 0),
                 radius: expanded ? 16 : 10, y: 2)
         .opacity(s == nil ? 0 : 1)

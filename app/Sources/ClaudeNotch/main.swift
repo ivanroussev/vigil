@@ -58,6 +58,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let hovered = inside || t - lastInside < 0.3          // small grace so it doesn't flicker
         if hovered != ui.hovered { ui.hovered = hovered }
         if panel.ignoresMouseEvents == inside { panel.ignoresMouseEvents = !inside }
+        debugLog("mouse=\(Int(local.x)),\(Int(local.y)) hit=\(ui.hitRect.integral) inside=\(inside) shown=\(store.shown?.state ?? "nil") panel=\(f.integral)")
+    }
+
+    /// Set ~/.claude/notch/.appdebug to log hit testing twice a second.
+    var lastDebug: TimeInterval = 0
+    func debugLog(_ line: String) {
+        let t = ProcessInfo.processInfo.systemUptime
+        guard t - lastDebug > 0.5 else { return }
+        lastDebug = t
+        let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude/notch")
+        guard FileManager.default.fileExists(atPath: root.appendingPathComponent(".appdebug").path) else { return }
+        let url = root.appendingPathComponent("app-debug.log")
+        if let h = try? FileHandle(forWritingTo: url) {
+            h.seekToEndOfFile(); h.write(Data((line + "\n").utf8)); try? h.close()
+        } else {
+            try? Data((line + "\n").utf8).write(to: url)
+        }
     }
 
     /// Finds the notch and centers a click-through panel on it.
