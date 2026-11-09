@@ -61,13 +61,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         debugLog("mouse=\(Int(local.x)),\(Int(local.y)) hit=\(ui.hitRect.integral) inside=\(inside) shown=\(store.shown?.state ?? "nil") panel=\(f.integral)")
     }
 
-    /// Set ~/.claude/notch/.appdebug to log hit testing twice a second.
+    /// Set ~/.claude/vigil/.appdebug to log hit testing twice a second.
     var lastDebug: TimeInterval = 0
     func debugLog(_ line: String) {
         let t = ProcessInfo.processInfo.systemUptime
         guard t - lastDebug > 0.5 else { return }
         lastDebug = t
-        let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude/notch")
+        let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude/vigil")
         guard FileManager.default.fileExists(atPath: root.appendingPathComponent(".appdebug").path) else { return }
         let url = root.appendingPathComponent("app-debug.log")
         if let h = try? FileHandle(forWritingTo: url) {
@@ -134,7 +134,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let button = statusItem?.button else { return }
         todayItem.title = "Today: \(Fmt.duration(store.todaySeconds)) across \(store.todayTasks) task\(store.todayTasks == 1 ? "" : "s")"
         guard let s else {
-            button.image = NSImage(systemSymbolName: "capsule.fill", accessibilityDescription: "Claude Notch")
+            button.image = NSImage(systemSymbolName: "eye", accessibilityDescription: "Vigil")
             button.attributedTitle = NSAttributedString(string: "")
             button.toolTip = "No active Claude session"
             detailItem.title = "No active Claude session"
@@ -179,7 +179,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func setUpMenu() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         let menu = NSMenu()
-        menu.addItem(withTitle: "Claude Notch", action: nil, keyEquivalent: "")
+        menu.addItem(withTitle: "Vigil", action: nil, keyEquivalent: "")
         menu.addItem(detailItem)
         menu.addItem(todayItem)
         menu.addItem(.separator())
@@ -250,7 +250,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 /// Launch at login via a LaunchAgent (works for an unsigned local build).
 enum LoginItem {
-    static let label = "com.roussev.claudenotch"
+    static let label = "com.roussev.vigil"
     static var plist: URL {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/LaunchAgents/\(label).plist")
     }

@@ -1,7 +1,7 @@
 import Foundation
 import Combine
 
-/// Reads ~/.claude/notch twice a second: live sessions, approval requests and task history.
+/// Reads ~/.claude/vigil twice a second: live sessions, approval requests and task history.
 final class StatusStore: ObservableObject {
     @Published private(set) var sessions: [SessionStatus] = []     // most important first
     @Published private(set) var requests: [ApprovalRequest] = []
@@ -15,7 +15,7 @@ final class StatusStore: ObservableObject {
     /// Called when a session changes state (used for sounds).
     var onTransition: ((_ from: String, _ to: String) -> Void)?
 
-    private let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude/notch")
+    private let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude/vigil")
     private var timer: Timer?
     private var lastStates: [String: String] = [:]
     private var lastHistoryLoad: Double = 0

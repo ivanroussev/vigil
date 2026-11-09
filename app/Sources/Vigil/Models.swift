@@ -13,7 +13,7 @@ struct TaskSummary: Codable, Equatable {
     var tools: Int?
 }
 
-/// One Claude session, as written by hooks/notch-hook.sh.
+/// One Claude session, as written by hooks/vigil-hook.sh.
 struct SessionStatus: Codable, Equatable, Identifiable {
     var state: String                 // working | needs_you | done | idle
     var session: String? = nil

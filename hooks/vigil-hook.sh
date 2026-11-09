@@ -1,10 +1,10 @@
 #!/bin/bash
 # Claude Code hook: turns each event into a status file the notch app reads.
-#   ~/.claude/notch/sessions/<session_id>.json   live state per session
-#   ~/.claude/notch/history.jsonl                one line per finished task
+#   ~/.claude/vigil/sessions/<session_id>.json   live state per session
+#   ~/.claude/vigil/history.jsonl                one line per finished task
 # Prints nothing and exits 0, except for PermissionRequest (see approve.sh).
 
-ROOT="$HOME/.claude/notch"
+ROOT="$HOME/.claude/vigil"
 DIR="$ROOT/sessions"
 mkdir -p "$DIR"
 

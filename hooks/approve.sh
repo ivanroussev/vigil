@@ -1,18 +1,18 @@
 #!/bin/bash
 # PermissionRequest: let the notch app answer Allow / Deny.
-# Waits up to NOTCH_APPROVE_WAIT seconds (default 60) for a reply file.
+# Waits up to VIGIL_APPROVE_WAIT seconds (default 60) for a reply file.
 # No reply, or the app isn't running -> prints nothing, so Claude shows
 # its normal permission dialog. Never approves on its own.
 
-ROOT="$HOME/.claude/notch"
-WAIT="${NOTCH_APPROVE_WAIT:-60}"
+ROOT="$HOME/.claude/vigil"
+WAIT="${VIGIL_APPROVE_WAIT:-60}"
 EVENT=$(cat)
 
 # Questions and plan approvals need the real Claude UI.
 TOOL=$(jq -r '.tool_name // ""' <<<"$EVENT")
 case "$TOOL" in AskUserQuestion|ExitPlanMode|EnterPlanMode) exit 0 ;; esac
 
-pgrep -x ClaudeNotch >/dev/null || exit 0
+pgrep -x Vigil >/dev/null || exit 0
 
 mkdir -p "$ROOT/requests" "$ROOT/responses"
 SID=$(jq -r '.session_id' <<<"$EVENT")
