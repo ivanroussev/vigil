@@ -72,12 +72,16 @@ struct NotchView: View {
 
             // Thin progress line along the bottom edge.
             if let s, s.state != "needs_you", (s.total ?? 0) > 0 || s.state == "done" {
-                Capsule()
-                    .fill(color)
-                    .frame(width: max(4, (width - 24) * progress), height: 2)
-                    .padding(.leading, 12)
-                    .padding(.bottom, 2)
-                    .shadow(color: color, radius: 3)
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.15))
+                    Capsule()
+                        .fill(color)
+                        .frame(width: max(6, (width - 28) * progress))
+                        .shadow(color: color, radius: 4)
+                }
+                .frame(width: width - 28, height: 3)
+                .padding(.leading, 14)
+                .padding(.bottom, 3)
             }
 
             HStack(spacing: 0) {

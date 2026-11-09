@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 /// Borderless panel that may sit over the menu bar.
@@ -51,11 +52,57 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel = p
     }
 
+    var cancellables = Set<AnyCancellable>()
+    let detailItem = NSMenuItem(title: "No active Claude session", action: nil, keyEquivalent: "")
+
+    /// Menu bar status: "● ▰▰▰▱▱▱▱▱ 3/8" while working, amber when it needs you, green when done.
+    func updateStatusBar(_ s: SessionStatus?) {
+        guard let button = statusItem?.button else { return }
+        guard let s else {
+            button.image = NSImage(systemSymbolName: "capsule.fill", accessibilityDescription: "Claude Notch")
+            button.attributedTitle = NSAttributedString(string: "")
+            button.toolTip = "No active Claude session"
+            detailItem.title = "No active Claude session"
+            return
+        }
+        button.image = nil
+        let color: NSColor = s.state == "needs_you" ? .systemOrange : s.state == "done" ? .systemGreen
+            : NSColor(red: 0.85, green: 0.47, blue: 0.34, alpha: 1)
+        let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
+        let text = NSMutableAttributedString()
+        func add(_ str: String, _ c: NSColor) {
+            text.append(NSAttributedString(string: str, attributes: [.foregroundColor: c, .font: font]))
+        }
+        switch s.state {
+        case "needs_you": add("✋ needs you", color)
+        case "done": add("✓ done", color)
+        default:
+            add("● ", color)
+            if let t = s.total, t > 0 {
+                let slots = 10
+                let filled = Int((s.progress * Double(slots)).rounded())
+                add(String(repeating: "▰", count: filled), color)
+                add(String(repeating: "▱", count: slots - filled), .tertiaryLabelColor)
+                add(" \(s.done ?? 0)/\(t)", .labelColor)
+            } else if let started = s.started {
+                let m = Int(Date().timeIntervalSince1970 - started) / 60
+                add("working \(m)m", .labelColor)
+            } else {
+                add("working", .labelColor)
+            }
+        }
+        button.attributedTitle = text
+        let where_ = s.project.map { " · \($0)" } ?? ""
+        button.toolTip = (s.action ?? "") + where_
+        detailItem.title = (s.action ?? s.state) + where_
+    }
+
     func setUpMenu() {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.image = NSImage(systemSymbolName: "capsule.fill", accessibilityDescription: "Claude Notch")
         let menu = NSMenu()
         menu.addItem(withTitle: "Claude Notch", action: nil, keyEquivalent: "")
+        menu.addItem(detailItem)
         menu.addItem(.separator())
         for (title, tag) in [("Preview: working", 1), ("Preview: needs you", 2), ("Preview: done", 3), ("Stop preview", 0)] {
             let m = NSMenuItem(title: title, action: #selector(preview(_:)), keyEquivalent: "")
@@ -67,6 +114,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         item.menu = menu
         statusItem = item
+
+        // Refresh on every change, plus once a minute for the elapsed time.
+        store.$primary.combineLatest(store.$demo)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] p, d in self?.updateStatusBar(d ?? p) }
+            .store(in: &cancellables)
+        Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            self.updateStatusBar(self.store.shown)
+        }
     }
 
     @objc func preview(_ sender: NSMenuItem) {
