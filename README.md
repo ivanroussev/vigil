@@ -6,7 +6,7 @@ You give Claude Code a long task and then… wait. Is it almost done? Stuck on a
 on a permission prompt you can't see? Vigil turns the notch into a live status display, so you
 know at a glance without switching windows.
 
-<!-- demo: docs/demo.gif (10–15s: pill working → hover card → done) -->
+<p align="center"><img src="docs/demo.gif" width="520" alt="Vigil: progress in the notch, hover card, approval, finish summary"></p>
 
 ## What it shows
 
@@ -76,8 +76,12 @@ approvals always stay in Claude.
 
 ## Settings
 
-The eye icon in the menu bar has: previews of each state, sounds on/off, launch at login, quit.
-The pill is hidden from screen sharing and recordings and stays out of fullscreen apps.
+The eye icon in the menu bar has: previews of each state, sounds on/off, launch at login,
+show in screen recordings, quit. By default the pill is hidden from screen sharing and recordings,
+and it stays out of fullscreen apps.
+
+`scripts/demo.sh` plays a scripted session through every state (~20s), handy for trying it out or
+recording a demo (turn on "Show in screen recordings" first).
 
 ## Known limits
 

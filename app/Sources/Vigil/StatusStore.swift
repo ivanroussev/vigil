@@ -46,13 +46,17 @@ final class StatusStore: ObservableObject {
         let t = Date().timeIntervalSince1970
         now = t
 
-        let live: [SessionStatus] = decodeDir("sessions").filter { s in
+        var live: [SessionStatus] = decodeDir("sessions").filter { s in
             let age = t - (s.updated ?? 0)
             switch s.state {
             case "done": return age < 30 * 60                      // done fades after 30 min
             case "idle": return false
             default: return age < 6 * 3600 && isAlive(s.pid)       // drop crashed sessions
             }
+        }
+        // scripts/demo.sh: while its session exists, show only that one.
+        if live.contains(where: { $0.session == "vigil-demo" }) {
+            live = live.filter { $0.session == "vigil-demo" }
         }
         let sorted = live.sorted { a, b in
             a.priority != b.priority ? a.priority > b.priority : (a.updated ?? 0) > (b.updated ?? 0)

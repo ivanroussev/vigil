@@ -24,10 +24,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let todayItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     let soundsItem = NSMenuItem(title: "Sounds", action: #selector(toggleSounds), keyEquivalent: "")
     let loginItem = NSMenuItem(title: "Launch at login", action: #selector(toggleLogin), keyEquivalent: "")
+    let recordItem = NSMenuItem(title: "Show in screen recordings", action: #selector(toggleRecordable), keyEquivalent: "")
 
     var soundsOn: Bool {
         get { UserDefaults.standard.object(forKey: "sounds") as? Bool ?? true }
         set { UserDefaults.standard.set(newValue, forKey: "sounds") }
+    }
+
+    /// Off by default so the pill stays out of screen shares; on for recording a demo.
+    var recordable: Bool {
+        get { UserDefaults.standard.bool(forKey: "recordable") }
+        set { UserDefaults.standard.set(newValue, forKey: "recordable") }
+    }
+
+    @objc func toggleRecordable() {
+        recordable.toggle()
+        recordItem.state = recordable ? .on : .off
+        panel?.sharingType = recordable ? .readOnly : .none
     }
 
     func applicationDidFinishLaunching(_ note: Notification) {
@@ -100,7 +113,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         p.backgroundColor = .clear
         p.hasShadow = false
         p.ignoresMouseEvents = true
-        p.sharingType = .none                                        // hidden from screen sharing / recording
+        p.sharingType = recordable ? .readOnly : .none               // hidden from screen sharing unless enabled
         p.level = NSWindow.Level(rawValue: NSWindow.Level.mainMenu.rawValue + 3)
         p.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]   // not over fullscreen apps
         p.contentView = FirstClickHostingView(rootView:
@@ -195,8 +208,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         soundsItem.state = soundsOn ? .on : .off
         loginItem.target = self
         loginItem.state = LoginItem.isEnabled ? .on : .off
+        recordItem.target = self
+        recordItem.state = recordable ? .on : .off
         menu.addItem(soundsItem)
         menu.addItem(loginItem)
+        menu.addItem(recordItem)
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         item.menu = menu
